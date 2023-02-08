@@ -20,39 +20,25 @@ are available for the following namespaces:
 The libraries are distributed on [PyPi](https://pypi.org/). In order to add it as a dependency, run the following command:
 
 ```shell
-$ npm install @nutanix-api/aiops-js-client
-$ npm install @nutanix-api/vmm-js-client
-$ npm install @nutanix-api/iam-js-client
+$ pip install ntnx-storage-py-client
+$ pip install ntnx-vmm-py-client
+$ pip install ntnx-iam-py-client
 
 ...etc..
 
 ```
 
-These modules can be used in the CommonJS (CJS) , ECMAScript6(ES6) and Universal Module Definition(UMD) formats. While using the module in browser frameworks like React or Vue.JS , you can use import/export. Older Node.js versions can continue to use the require ().
-
-For CommonJs:
-
-```javascript
-const sdk = require("@nutanix-api/iam-js-client/dist/lib/index");
-let client = new sdk.ApiClient();
-```
-
-For ES6:
-
-```javascript
-import ApiClient from "@nutanix-api/iam-js-client/dist/es/ApiClient";
-```
 
 And consume it as...
 
-```javascript
-import ApiClient from "@nutanix-api/iam-js-client/dist/es/ApiClient";
+```python
+config = Configuration()
+config.host = '10.19.50.27' # IPv4/IPv6 address or FQDN of the cluster
+config.port = 9440 # Port to which to connect to
+config.username = 'admin' # UserName to connect to the cluster
+config.password = 'password' # Password to connect to the cluster
+api_client = ApiClient(configuration=config)
 
-let client = new ApiClient();
-client.host = '10.19.50.27'; // IPv4/IPv6 address or FQDN of the cluster
-client.port = 9440; // Port to which to connect to
-client.username = 'admin'; // UserName to connect to the cluster
-client.password = 'password'; // Password to connect to the cluster
 ```
 
 For detailed instructions on installing individual clients, please refer to the README documentation for the respective clients in the namespace directories.
