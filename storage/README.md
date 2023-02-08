@@ -1,0 +1,205 @@
+# Python Client For Nutanix Storage Versioned APIs
+
+The Python client for Nutanix Storage Versioned APIs is designed for Python client application developers offering them simple and flexible access to APIs that manages volume groups and storage containers in Nutanix cluster.
+## Features
+- Invoke Nutanix APIs with a simple interface.
+- Handle Authentication seamlessly.
+- Reduce boilerplate code implementation.
+- Use standard methods for installation.
+
+## Version
+- API version: v4.0.a3
+- Package version: 4.0.2a3
+
+## Requirements.
+Python 3.6, 3.7, and 3.8 are fully supported and tested.
+
+
+## Installation & Usage
+
+### Installing in a virtual environment
+[virtualenv](https://virtualenv.pypa.io/en/latest/) is a tool to create isolated Python environments. The basic problem it addresses is one of dependencies and versions, and indirectly permissions. virtualenv can help you install this client without needing system install permissions. It creates an environment that has its own installation directories without sharing libraries with other virtualenv environments or the system installation.
+
+#### Mac/Linux
+To install virtualenv via pip run:
+```sh
+$ pip3 install virtualenv
+```
+Create the virtualenv and activate it
+```sh
+$ virtualenv -p python3 <my-env>
+$ source <my-env>/bin/activate
+```
+Install the Nutanix client into the virtualenv
+```sh
+<my-env>/bin/pip install ntnx-storage-py-client
+```
+
+#### Windows
+To install virtualenv via pip run:
+```sh
+> pip install virtualenv
+```
+Create the virtualenv and activate it
+```sh
+> virtualenv <my-env>
+> myenv\Scripts\activate
+```
+Install the Nutanix SDK into the virtualenv
+```sh
+<your-env>\Scripts\pip.exe install ntnx-storage-py-client
+```
+
+Then import the package:
+```python
+import ntnx_storage_py_client
+```
+
+## Getting Started
+
+## Configuration
+The python client for Nutanix Storage Versioned APIs can be configured with the following parameters
+
+| Parameter | Description                                                                      | Required | Default Value|
+|-----------|----------------------------------------------------------------------------------|----------|--------------|
+| scheme    | URI scheme for connecting to the cluster (HTTP or HTTPS using SSL/TLS)           | No       | https        |
+| host      | IPv4/IPv6 address or FQDN of the cluster to which the client will connect to     | Yes      | N/A          |
+| port      | Port on the cluster to which the client will connect to                          | No       | 9440         |
+| username  | Username to connect to a cluster                                                 | Yes      | N/A          |
+| password  | Password to connect to a cluster                                                 | Yes      | N/A          |
+| debug     | Runs the client in debug mode if specified                                       | No       | False        |
+| verify_ssl| Verify SSL certificate of cluster the client will connect to                     | No       | True         |
+| max_retry_attempts| Maximum number of retry attempts while connecting to the cluster         | No       | 5            |
+| backoff_factor| A backoff factor to apply between attempts after the second try.             | No       | 3            |
+| logger_file | File location to which debug logs are written to                               | No       | N/A          |
+| connect_timeout | Connection timeout in milliseconds for all operations                      | No       | 30000        |
+| read_timeout | Read timeout in milliseconds for all operations                               | No       | 30000        |
+
+
+### Sample Configuration
+```python
+config = Configuration()
+config.host = '10.19.50.27' # IPv4/IPv6 address or FQDN of the cluster
+config.port = 9440 # Port to which to connect to
+config.username = 'admin' # UserName to connect to the cluster
+config.password = 'password' # Password to connect to the cluster
+api_client = ApiClient(configuration=config)
+```
+
+### Proxy Configuration
+```python
+config = Configuration()
+# Configure the cluster as shown above
+# ...
+config.proxy_scheme = "https"
+config.proxy_host = "127.0.0.1"
+config.proxy_port = 8080
+config.proxy_username = "proxy_admin"
+config.proxy_password = "proxy_password"
+api_client = ApiClient(configuration=config)
+```
+
+### Authentication
+Nutanix APIs currently support HTTP Basic Authentication only, and the Python client can be configured using the username and password parameters to send Basic headers along with every request.
+
+### Additional Headers
+The python client can be configured to send additional headers on each request.
+
+```python
+client = ApiClient(configuration=config)
+client.add_default_header(header_name='Accept-Encoding', header_value='gzip, deflate, br')
+```
+
+### Retry Mechanism
+The python client can be configured to retry requests that fail with the following status codes. The numbers of seconds before which the next retry is attempted is determined using the following formula:
+
+```{backoff factor} * (2 * ({number of retries so far} - 1))```
+
+- [408 - Request Timeout](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/408)
+- [502 - Bad Gateway](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/502)
+- [503 - Service Unavailable](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/503)
+
+```python
+config = Configuration()
+config.max_retry_attempts = 3 # Max retry attempts while reconnecting on a loss of connection
+config.backoff_factor = 3 # Backoff factor to use during retry attempts
+client = ApiClient(configuration=config)
+```
+
+## Usage
+
+### Invoking an operation
+```python
+# Initialize the API
+storage_container_api_instance = StorageContainerApi(api_client=client) # client configured in previous step
+extId = 'extId_example' # UUID.
+
+# Get the attributes of an existing storage container.
+try:
+    api_response = storage_container_api_instance.get_storage_container_by_ext_id(extId)
+except ApiException as e:
+```
+
+### Setting headers for individual operations
+Headers can be configured globally on the python client using the [method to set default headers](#additional-headers). However, sometimes headers need to be set on an individual operation basis. Nutanix APIs require that concurrent updates are protected using [ETag headers](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/ETag).
+
+```python
+# Initialize the API
+storage_container_api_instance = StorageContainerApi(api_client=client) # client configured in previous step
+extId = 'extId_example' # UUID.
+
+# Get the attributes of an existing storage container.
+try:
+    api_response = storage_container_api_instance.get_storage_container_by_ext_id(extId)
+except ApiException as e:
+
+# Extract E-Tag Header
+etag_value = ApiClient.get_etag(api_response)
+
+# Updates the attributes of an existing storage container.
+try:
+    # The body parameter in the following operation is received from the previous GET request's response which needs to be updated.
+    api_response = storage_container_api_instance.update_storage_container(body, extId, if_match=etag_value) # Use the extracted etag value
+except ApiException as e:
+```
+
+### List Operations
+List Operations for Nutanix APIs support pagination, filtering, sorting and projections. The table below details the parameters that can be used to set the options for pagination etc.
+
+| Parameter | Description
+|-----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| _page     | specifies the page number of the result set. Must be a positive integer between 0 and the maximum number of pages that are available for that resource. Any number out of this range will lead to no results being returned.|
+| _limit    | specifies the total number of records returned in the result set. Must be a positive integer between 0 and 100. Any number out of this range will lead to a validation error. If the limit is not provided a default value of 50 records will be returned in the result set|
+| _filter   | allows clients to filter a collection of resources. The expression specified with $filter is evaluated for each resource in the collection, and only items where the expression evaluates to true are included in the response. Expression specified with the $filter must conform to the [OData V4.01 URL](https://docs.oasis-open.org/odata/odata/v4.01/odata-v4.01-part2-url-conventions.html#sec_SystemQueryOptionfilter) conventions. |
+| _orderby  | allows clients to specify the sort criteria for the returned list of objects. Resources can be sorted in ascending order using asc or descending order using desc. If asc or desc are not specified the resources will be sorted in ascending order by default. For example, 'orderby=templateName desc' would get all templates sorted by templateName in desc order. |
+| _select   | allows clients to request a specific set of properties for each entity or complex type. Expression specified with the $select must conform to the OData V4.01 URL conventions. If a $select expression consists of a single select item that is an asterisk (i.e. *), then all properties on the matching resource will be returned. |
+| _expand   | allows clients to request related resources when a resource that satisfies a particular request is retrieved. Each expand item is evaluated relative to the entity containing the property being expanded. Other query options can be applied to an expanded property by appending a semicolon-separated list of query options, enclosed in parentheses, to the property name. Allowed system query options are $filter,$select, $orderby. |
+
+```python
+# Initialize the API
+storage_container_api_instance = StorageContainerApi(api_client=client) # client configured in previous step
+extId = 'extId_example' # UUID.
+
+# Get the list of all storage containers configured in the cluster.
+try:
+    api_response = storage_container_api_instance.get_all_storage_containers(
+	                   _page=page, # if page parameter is present
+	                   _limit=limit, # if limit parameter is present
+	                   _filter=_filter, # if filter parameter is present
+	                   _orderby=_orderby, # if orderby parameter is present
+	                   _select=select, # if select parameter is present
+	                   _expand=expand) # if expand parameter is present
+except ApiException as e:
+
+```
+The list of filterable and sortable fields with expansion keys can be found in the documentation [here](https://developers.nutanix.com/).
+
+## API Reference
+
+This library has a full set of [API Reference Documentation](https://developers.nutanix.com/sdk-reference?namespace=storage&version=v4.0.a3&language=python). This documentation is auto-generated, and the location may change.
+
+## License
+This library is licensed under Nutanix proprietary license. Full license text is available in [LICENSE](https://developers.nutanix.com/license).
+
+## Contact us
+In case of issues please reach out to us at the [mailing list](mailto:sdk@nutanix.com)
